@@ -4,6 +4,9 @@ set -euo pipefail
 SANDBOX_USER="agent-sandbox"
 SANDBOX_GROUP="agent-sandbox"
 SANDBOX_HOME="/Users/${SANDBOX_USER}"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+WORKSPACE_AGENTS_FILE="${SANDBOX_HOME}/workspace/AGENTS.md"
+REPO_AGENTS_FILE="${SCRIPT_DIR}/AGENT_META.md"
 PREFERRED_GROUP_ID=550
 WRITABLE_DIRS=(
   workspace
@@ -94,6 +97,11 @@ fi
 sudo mkdir -p "${SANDBOX_HOME}/workspace"
 sudo chown "$SANDBOX_USER":"$SANDBOX_GROUP" "${SANDBOX_HOME}/workspace"
 echo "✓ Workspace ready at ${SANDBOX_HOME}/workspace"
+
+if [ -f "$REPO_AGENTS_FILE" ]; then
+  sudo install -o "$SANDBOX_USER" -g "$SANDBOX_GROUP" -m 0644 "$REPO_AGENTS_FILE" "$WORKSPACE_AGENTS_FILE"
+  echo "✓ Agent guide installed at ${WORKSPACE_AGENTS_FILE}"
+fi
 
 # Create standard dotfile dirs the sandbox user can write to
 # (needed for npm, pip/uv, node, etc.)

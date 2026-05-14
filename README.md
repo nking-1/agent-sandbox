@@ -50,6 +50,9 @@ an interactive shell as `agent-sandbox`; type `exit` to return to the host user.
   escalate.
 - **Activation:** `activate.sh` allocates an interactive PTY with `script` and
   `sudo -u`; it does not require SSH or an enabled `sshd`.
+- **Agent guide:** `setup.sh` copies this repository's `AGENT_META.md` to
+  `/Users/agent-sandbox/workspace/AGENTS.md` so agents see the sandbox operating
+  policy when they start in the workspace.
 - **System tools:** `/opt/homebrew/bin` and `/opt/homebrew/sbin` are on PATH by
   default so the sandbox can run host-installed binaries. The `brew` command is
   shadowed with a message because system-wide package installs must happen from
