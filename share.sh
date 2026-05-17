@@ -1,12 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-SANDBOX_USER="agent-sandbox"
-SANDBOX_WORKSPACE="/Users/${SANDBOX_USER}/workspace"
-STATE_FILE="/Users/${SANDBOX_USER}/.shared-projects"
-ACL_ENTRY="${SANDBOX_USER} allow read,write,delete,add_file,add_subdirectory,file_inherit,directory_inherit"
-HOST_USER="$(whoami)"
-HOST_ACL_ENTRY="${HOST_USER} allow read,write,delete,add_file,add_subdirectory,file_inherit,directory_inherit"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+. "${SCRIPT_DIR}/_lib.sh"
+
+ACL_ENTRY="$SANDBOX_ACL"
+HOST_ACL_ENTRY="$HOST_ACL"
 
 list_shared() {
   local found=false
@@ -51,12 +50,12 @@ SOURCE=$(cd "$1" && pwd -P)
 NAME="${2:-$(basename "$SOURCE")}"
 LINK="${SANDBOX_WORKSPACE}/${NAME}"
 
-if [[ -z "$NAME" || "$NAME" == "." || "$NAME" == ".." || "$NAME" == *"/"* ]]; then
+if ! validate_name "$NAME"; then
   echo "✗ Invalid share name '${NAME}'"
   exit 1
 fi
 
-HOST_HOME="${HOME%/}"
+HOST_HOME="$HOST_HOME_DIR"
 case "$SOURCE" in
   "$HOST_HOME"|"$HOST_HOME"/*)
     echo "✗ Refusing to share '${SOURCE}' because it is under '${HOST_HOME}'."
@@ -96,5 +95,8 @@ sudo mkdir -p "$SANDBOX_WORKSPACE"
 sudo -u "$SANDBOX_USER" ln -s "$SOURCE" "$LINK"
 printf '%s\t%s\n' "$NAME" "$SOURCE" | sudo tee -a "$STATE_FILE" > /dev/null
 
+safe_dir_add_both "$SOURCE"
+
 echo "✓ Shared '${SOURCE}' -> ${LINK}"
 echo "  The sandbox user can now read/write files in this project."
+echo "  git safe.directory configured for host and sandbox users."

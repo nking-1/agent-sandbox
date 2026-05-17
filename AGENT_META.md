@@ -10,14 +10,25 @@ You may freely inspect, edit, install project dependencies, run tests, build
 artifacts, and make local commits within shared projects unless a project-specific
 instruction says otherwise.
 
+Project files should live under `/Users/Shared/code`, not directly in bare
+`/Users/Shared`. The bare shared directory is a macOS public drop area and may
+prevent you from renaming or deleting files owned by another user, even when you
+can read them.
+
 Some operations may be intentionally unavailable:
 
 - You do not have sudo or admin privileges.
 - You may not be able to read the admin user's home directory.
 - You may not have access to the admin user's SSH keys, Git credentials,
   keychains, or private config files.
-- Remote Git operations such as fetch, pull, push, or cloning private
-  repositories may fail if credentials were intentionally withheld.
+- **Remote Git operations are the admin's responsibility.** Use local Git
+  freely (`status`, `add`, `commit`, `branch`, `checkout`, `merge`, `diff`,
+  `log`, `stash`, local `tag`). Do not run `fetch`, `pull`, `push`, `clone`
+  of credentialed repos, `git remote add`/`set-url`, or anything else that
+  needs network credentials. When you need a remote operation, finish your
+  local commits on a branch and surface a clear request to the admin
+  (which repo, which branch, what to push or pull). This keeps the blast
+  radius of the sandbox limited to local history.
 - System-wide package installation may be blocked; install user-local tools in
   your own home directory when possible.
 

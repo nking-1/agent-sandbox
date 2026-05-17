@@ -1,12 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-SANDBOX_USER="agent-sandbox"
-SANDBOX_WORKSPACE="/Users/${SANDBOX_USER}/workspace"
-STATE_FILE="/Users/${SANDBOX_USER}/.shared-projects"
-ACL_ENTRY="${SANDBOX_USER} allow read,write,delete,add_file,add_subdirectory,file_inherit,directory_inherit"
-HOST_USER="$(whoami)"
-HOST_ACL_ENTRY="${HOST_USER} allow read,write,delete,add_file,add_subdirectory,file_inherit,directory_inherit"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+. "${SCRIPT_DIR}/_lib.sh"
+
+ACL_ENTRY="$SANDBOX_ACL"
+HOST_ACL_ENTRY="$HOST_ACL"
 
 list_shared() {
   local found=false
@@ -67,8 +66,10 @@ sudo chmod -R -a "$HOST_ACL_ENTRY" "$SOURCE" 2>/dev/null || true
 if [ -f "$STATE_FILE" ]; then
   TMP_STATE=$(mktemp)
   awk -F '\t' -v name="$NAME" -v source="$SOURCE" 'BEGIN { OFS = FS } !($1 == name || $2 == source)' "$STATE_FILE" > "$TMP_STATE"
-  sudo mv "$TMP_STATE" "$STATE_FILE"
-  sudo chmod 644 "$STATE_FILE"
+  sudo install -o "$SANDBOX_USER" -g "$SANDBOX_GROUP" -m 0644 "$TMP_STATE" "$STATE_FILE"
+  rm -f "$TMP_STATE"
 fi
+
+safe_dir_remove_both "$SOURCE"
 
 echo "✓ Unshared '${NAME}' (was -> ${SOURCE})"
