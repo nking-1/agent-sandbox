@@ -7,6 +7,8 @@ SANDBOX_HOME="/Users/${SANDBOX_USER}"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 WORKSPACE_AGENTS_FILE="${SANDBOX_HOME}/workspace/AGENTS.md"
 REPO_AGENTS_FILE="${SCRIPT_DIR}/AGENT_META.md"
+SHARED_CODE_ROOT="/Users/Shared/code"
+CURRENT_USER="$(whoami)"
 PREFERRED_GROUP_ID=550
 WRITABLE_DIRS=(
   workspace
@@ -41,6 +43,14 @@ find_free_group_id() {
 
 run_as_sandbox() {
   sudo -H -u "$SANDBOX_USER" env HOME="$SANDBOX_HOME" "$@"
+}
+
+set_acl() {
+  local path="$1"
+  local acl="$2"
+
+  sudo chmod -a "$acl" "$path" 2>/dev/null || true
+  sudo chmod +a "$acl" "$path"
 }
 
 if dscl . -read "/Groups/${SANDBOX_GROUP}" &>/dev/null; then
@@ -92,6 +102,15 @@ else
     exit 1
   fi
 fi
+
+# Ensure the shared project root exists and grants inherited access to both
+# users, so files copied or created under it stay editable by both accounts.
+sudo mkdir -p "$SHARED_CODE_ROOT"
+sudo chown "$CURRENT_USER":"$SANDBOX_GROUP" "$SHARED_CODE_ROOT"
+sudo chmod 775 "$SHARED_CODE_ROOT"
+set_acl "$SHARED_CODE_ROOT" "${SANDBOX_USER} allow read,write,delete,add_file,add_subdirectory,file_inherit,directory_inherit"
+set_acl "$SHARED_CODE_ROOT" "${CURRENT_USER} allow read,write,delete,add_file,add_subdirectory,file_inherit,directory_inherit"
+echo "✓ Shared project root ready at ${SHARED_CODE_ROOT}"
 
 # Ensure workspace directory exists
 sudo mkdir -p "${SANDBOX_HOME}/workspace"
@@ -164,7 +183,6 @@ sudo chmod 755 "$SANDBOX_HOME"
 echo "✓ Home directory writable by sandbox user"
 
 # Block access to the host user's home directory
-CURRENT_USER=$(whoami)
 CURRENT_HOME="/Users/${CURRENT_USER}"
 
 # Create a custom ACL denying the sandbox user access to your home
